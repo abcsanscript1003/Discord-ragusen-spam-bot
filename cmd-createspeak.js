@@ -5,14 +5,10 @@ const {
   PermissionFlagsBits,
 } = require('discord.js');
 
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('createspeak')
-    .setDescription('チャンネルを作成し、そこで指定回数発言します')
+    .setDescription('チャンネルを作成し、そこで指定回数まとめて発言します')
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels)
     .addStringOption((o) =>
       o.setName('content').setDescription('発言する内容').setRequired(true)
@@ -51,28 +47,37 @@ module.exports = {
 
     await interaction.deferReply({ ephemeral: true });
 
-    const created = [];
-    const failed = [];
+    // 1. チャンネルを一気に作成
+    const names = Array.from({ length: channelCount }, (_, i) =>
+      channelCount > 1 ? `${baseName}-${i + 1}` : baseName
+    );
 
-    for (let i = 1; i <= channelCount; i++) {
-      const channelName = channelCount > 1 ? `${baseName}-${i}` : baseName;
-      try {
-        const channel = await interaction.guild.channels.create({
-          name: channelName,
+    const createResults = await Promise.allSettled(
+      names.map((name) =>
+        interaction.guild.channels.create({
+          name,
           type: ChannelType.GuildText,
           reason: `${interaction.user.tag} による作成 (/createspeak)`,
-        });
-        created.push(channel);
+        })
+      )
+    );
 
-        for (let j = 0; j < times; j++) {
-          await channel.send(content);
-          await sleep(400); // レート制限対策
-        }
-      } catch (err) {
-        console.error('createspeak エラー:', err);
-        failed.push(channelName);
+    const created = [];
+    const failed = [];
+    createResults.forEach((r, i) => {
+      if (r.status === 'fulfilled') created.push(r.value);
+      else {
+        console.error('チャンネル作成エラー:', r.reason);
+        failed.push(names[i]);
       }
-    }
+    });
+
+    // 2. 全チャンネル・全回数の発言を一気に送信
+    await Promise.allSettled(
+      created.flatMap((channel) =>
+        Array.from({ length: times }, () => channel.send(content))
+      )
+    );
 
     const embed = new EmbedBuilder()
       .setColor(created.length ? 0x57f287 : 0xed4245)
@@ -81,10 +86,10 @@ module.exports = {
         {
           name: '作成成功',
           value: created.length
-            ? created.map((c) => `<#${c.id}>（${times}回発言）`).join('\n')
+            ? created.map((c) => `<#${c.id}>（${times}回発言）`).join('\n').slice(0, 1024)
             : 'なし',
         },
-        { name: '作成失敗', value: failed.length ? failed.join(', ') : 'なし' }
+        { name: '作成失敗', value: failed.length ? failed.join(', ').slice(0, 1024) : 'なし' }
       );
 
     await interaction.editReply({ embeds: [embed] });
