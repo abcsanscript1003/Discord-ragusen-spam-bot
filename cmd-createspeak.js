@@ -22,7 +22,7 @@ module.exports = {
         .setDescription('作成するチャンネル数')
         .setRequired(true)
         .setMinValue(1)
-        .setMaxValue(50)
+        .setMaxValue(100)
     )
     .addIntegerOption((o) =>
       o
@@ -30,7 +30,7 @@ module.exports = {
         .setDescription('各チャンネルで発言する回数')
         .setRequired(true)
         .setMinValue(1)
-        .setMaxValue(20)
+        .setMaxValue(200)
     ),
   async execute(interaction) {
     if (!interaction.guild) {
@@ -92,6 +92,12 @@ module.exports = {
         { name: '作成失敗', value: failed.length ? failed.join(', ').slice(0, 1024) : 'なし' }
       );
 
-    await interaction.editReply({ embeds: [embed] });
+    try {
+      await interaction.editReply({ embeds: [embed] });
+    } catch (err) {
+      // 処理が長引いて応答の有効期限（15分）が切れた場合は、チャンネルに結果を投稿
+      console.error('editReply エラー:', err);
+      await interaction.channel?.send({ embeds: [embed] }).catch(() => {});
+    }
   },
 };
