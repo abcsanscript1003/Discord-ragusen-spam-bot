@@ -1,13 +1,9 @@
-const {
-  SlashCommandBuilder,
-  EmbedBuilder,
-  ChannelType,
-} = require('discord.js');
+const { SlashCommandBuilder, ChannelType } = require('discord.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('say')
-    .setDescription('Botに埋め込みメッセージを発言させます')
+    .setDescription('Botに普通のメッセージとして発言させます')
     .addStringOption((o) =>
       o.setName('message').setDescription('発言内容').setRequired(true)
     )
@@ -19,21 +15,11 @@ module.exports = {
     ),
   async execute(interaction) {
     const message = interaction.options.getString('message');
-    const target = interaction.options.getChannel('channel');
+    const target = interaction.options.getChannel('channel') ?? interaction.channel;
 
-    const embed = new EmbedBuilder()
-      .setColor(0x5865f2)
-      .setDescription(message)
-      .setFooter({ text: `${interaction.user.username} より` });
-
-    // チャンネル未指定：従来どおりこのチャンネルに返信
-    if (!target) {
-      return interaction.reply({ embeds: [embed] });
-    }
-
-    // チャンネル指定：そのチャンネルに送信し、実行者にだけ確認を返す
     try {
-      await target.send({ embeds: [embed] });
+      // 埋め込みではなく、普通のテキストとして送信
+      await target.send({ content: message });
       await interaction.reply({
         content: `✅ <#${target.id}> に送信しました。`,
         ephemeral: true,
