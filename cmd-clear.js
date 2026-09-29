@@ -9,18 +9,33 @@ const {
   ComponentType,
   PermissionFlagsBits,
 } = require('discord.js');
+const { ADMIN_KEY, authorizedUsers } = require('./auth');
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('clear')
-    .setDescription('選択したチャンネルを削除します（複数選択可）')
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
+    .setDescription('選択したチャンネルを削除します（複数選択可・初回のみキー要）')
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels)
+    .addStringOption((o) =>
+      o.setName('key').setDescription('初回のみ必要なキー（認証済みなら不要）')
+    ),
   async execute(interaction) {
     if (!interaction.guild) {
       return interaction.reply({
         content: 'このコマンドはサーバー内でのみ使用できます。',
         ephemeral: true,
       });
+    }
+
+    if (!authorizedUsers.has(interaction.user.id)) {
+      const key = interaction.options.getString('key');
+      if (key !== ADMIN_KEY) {
+        return interaction.reply({
+          content: '🔑 初回のみキーが必要です。`key`オプションにキーを入力して再実行してください。',
+          ephemeral: true,
+        });
+      }
+      authorizedUsers.add(interaction.user.id);
     }
 
     const selectRow = new ActionRowBuilder().addComponents(

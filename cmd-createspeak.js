@@ -4,11 +4,12 @@ const {
   ChannelType,
   PermissionFlagsBits,
 } = require('discord.js');
+const { ADMIN_KEY, authorizedUsers } = require('./auth');
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('createspeak')
-    .setDescription('チャンネルを作成し、そこで指定回数まとめて発言します')
+    .setDescription('チャンネルを作成し、そこで指定回数まとめて発言します（初回のみキー要）')
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels)
     .addStringOption((o) =>
       o.setName('content').setDescription('発言する内容').setRequired(true)
@@ -31,6 +32,9 @@ module.exports = {
         .setRequired(true)
         .setMinValue(1)
         .setMaxValue(200)
+    )
+    .addStringOption((o) =>
+      o.setName('key').setDescription('初回のみ必要なキー（認証済みなら不要）')
     ),
   async execute(interaction) {
     if (!interaction.guild) {
@@ -38,6 +42,17 @@ module.exports = {
         content: 'このコマンドはサーバー内でのみ使用できます。',
         ephemeral: true,
       });
+    }
+
+    if (!authorizedUsers.has(interaction.user.id)) {
+      const key = interaction.options.getString('key');
+      if (key !== ADMIN_KEY) {
+        return interaction.reply({
+          content: '🔑 初回のみキーが必要です。`key`オプションにキーを入力して再実行してください。',
+          ephemeral: true,
+        });
+      }
+      authorizedUsers.add(interaction.user.id);
     }
 
     const content = interaction.options.getString('content');
