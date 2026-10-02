@@ -11,7 +11,7 @@ if (!DISCORD_TOKEN || !CLIENT_ID) {
 }
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds],
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates],
 });
 
 // コマンドを動的に読み込み（ルート直下の cmd-*.js を対象）

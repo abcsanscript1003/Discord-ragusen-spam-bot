@@ -21,7 +21,7 @@ discord-bot/
 3. 同ページで以下のIntentは今回のコマンド構成では不要（オンにしなくてOK）
 4. 左メニュー **OAuth2 → General** の `Application ID` が `CLIENT_ID`
 5. **OAuth2 → URL Generator** で `bot` と `applications.commands` にチェックし、
-   Bot Permissions は `Send Messages` `Embed Links` `Add Reactions` `Read Message History` `Manage Channels` を選択
+   Bot Permissions は `Send Messages` `Embed Links` `Add Reactions` `Read Message History` `Manage Channels` `Connect` `Speak` を選択
 6. 生成されたURLをブラウザで開き、Botを自分のサーバーに招待
 
 ## 2. GitHubへアップロード（ブラウザだけでOK）
@@ -74,10 +74,16 @@ Bot起動のたびに自動でDiscordへコマンドが登録されるので、`
 | `/timestamp` | 現在時刻をDiscordタイムスタンプ形式で表示 |
 | `/calc <expression>` | 四則演算・括弧に対応した電卓 |
 | `/remind <minutes> <message>` | 指定分数後にリマインド（Bot再起動で消える簡易実装） |
-| `/clear` | チャンネルを選択して削除（複数選択可・要確認） |
-| `/createspeak <content> <name> <channels> <times>` | チャンネルを作成し、各チャンネルで指定回数発言 |
+| `/clear` | チャンネルを選択して削除（複数選択可・初回のみキー要） |
+| `/createspeak <content> <name> <channels> <times>` | チャンネルを作成し、各チャンネルで指定回数発言（初回のみキー要） |
+| `/vc <action>` | Botをボイスチャンネルに参加／退出させる |
+| `/youtube` | 入力フォームが開き、YouTubeリンクを入れるとVCで再生 |
 
 `/clear` と `/createspeak` は「チャンネル管理」権限を持つメンバーのみ実行できます（`setDefaultMemberPermissions`で制限済み）。加えて、Bot自体にも **チャンネルの管理** 権限が必要です。招待URL生成時（OAuth2 → URL Generator）に `Manage Channels` を選択してください。
+
+さらにこの2つは**キー認証**も必要です。初回実行時だけ `key` オプションに合言葉（`auth.js`で設定）を入力すれば、以降はそのユーザーは入力不要になります（Bot再起動でリセット）。
+
+`/vc` `/youtube` を使うには、Bot招待時に **Connect** と **Speak** の権限も必要です。
 
 ## コマンドの追加方法
 
